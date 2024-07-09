@@ -1,9 +1,12 @@
 package com.gabrielvicente.btgorderqueue.service;
 
 import com.gabrielvicente.btgorderqueue.dto.OrderCreatedEvent;
+import com.gabrielvicente.btgorderqueue.dto.OrderResponse;
 import com.gabrielvicente.btgorderqueue.entity.Order;
 import com.gabrielvicente.btgorderqueue.entity.OrderItem;
 import com.gabrielvicente.btgorderqueue.repository.OrderRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -28,6 +31,11 @@ public class OrderService {
         orderEntity.setTotal(getTotal(event));
 
         orderRepository.save(orderEntity);
+    }
+
+    public Page<OrderResponse> findAllByCustomerId(Long customerId, PageRequest pageRequest) {
+        Page<Order> orders = orderRepository.findAllByCustomerId(customerId, pageRequest);
+        return orders.map(OrderResponse::fromEntity);
     }
 
     private List<OrderItem> getOrderItems(OrderCreatedEvent orderCreatedEvent) {

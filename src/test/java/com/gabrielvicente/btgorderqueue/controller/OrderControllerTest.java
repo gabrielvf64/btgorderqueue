@@ -12,6 +12,7 @@ import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
@@ -19,6 +20,7 @@ import org.springframework.http.ResponseEntity;
 import java.math.BigDecimal;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.doReturn;
@@ -77,6 +79,37 @@ class OrderControllerTest {
             assertEquals(customerId, customerIdCaptor.getAllValues().get(1));
             assertEquals(page, pageRequestCaptor.getValue().getPageNumber());
             assertEquals(pageSize, pageRequestCaptor.getValue().getPageSize());
+        }
+
+        @Test
+        void shouldReturnCorrectResponseBody() {
+            var customerId = 1L;
+            var page = 0;
+            var pageSize = 10;
+            var orderTotal = BigDecimal.valueOf(20.50);
+            Page<OrderResponse> pagedResponse = OrderResponseFactory.buildWithDefaultValues();
+
+            doReturn(pagedResponse)
+                    .when(orderService).findAllByCustomerId(anyLong(), any());
+            doReturn(orderTotal)
+                    .when(orderService).findTotalSpentByCustomerId(any());
+
+            ResponseEntity<ApiResponse<OrderResponse>> response = orderController.listOrders(customerId, page, pageSize);
+
+            assertNotNull(response);
+            assertNotNull(response.getBody());
+            assertNotNull(response.getBody().data());
+            assertNotNull(response.getBody().paginationResponse());
+            assertNotNull(response.getBody().summary());
+
+            assertEquals(orderTotal, response.getBody().summary().get("totalSpentByTheCustomer"));
+
+            assertEquals(pagedResponse.getTotalElements(), response.getBody().paginationResponse().totalElements());
+            assertEquals(pagedResponse.getTotalPages(), response.getBody().paginationResponse().numberOfPages());
+            assertEquals(pagedResponse.getNumber(), response.getBody().paginationResponse().page());
+            assertEquals(pagedResponse.getSize(), response.getBody().paginationResponse().pageSize());
+
+            assertEquals(pagedResponse.getContent(), response.getBody().data());
         }
     }
 }

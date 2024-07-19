@@ -30,7 +30,7 @@ class OrderCreatedListenerTest {
 
         @Test
         void shouldCallOrderServiceWithCorrectParams() {
-            OrderCreatedEvent orderCreatedEvent = OrderCreatedEventFactory.createOrderCreatedEvent();
+            OrderCreatedEvent orderCreatedEvent = OrderCreatedEventFactory.buildOrderEventWithOneItem();
             Message<OrderCreatedEvent> message = MessageBuilder.withPayload(orderCreatedEvent).build();
 
             orderCreatedListener.listen(message);

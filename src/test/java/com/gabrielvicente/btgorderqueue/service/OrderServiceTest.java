@@ -1,8 +1,10 @@
 package com.gabrielvicente.btgorderqueue.service;
 
 import com.gabrielvicente.btgorderqueue.dto.OrderCreatedEvent;
+import com.gabrielvicente.btgorderqueue.dto.OrderResponse;
 import com.gabrielvicente.btgorderqueue.entity.Order;
 import com.gabrielvicente.btgorderqueue.factory.OrderCreatedEventFactory;
+import com.gabrielvicente.btgorderqueue.factory.OrderEntityFactory;
 import com.gabrielvicente.btgorderqueue.repository.OrderRepository;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -12,6 +14,8 @@ import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.mongodb.core.MongoTemplate;
 
 import java.math.BigDecimal;
@@ -19,8 +23,7 @@ import java.math.BigDecimal;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class OrderServiceTest {
@@ -38,7 +41,7 @@ class OrderServiceTest {
     ArgumentCaptor<Order> orderEntityArgumentCaptor;
 
     @Nested
-    class Save {
+    class save {
 
         @Test
         void shouldCallRepositorySave() {
@@ -86,4 +89,46 @@ class OrderServiceTest {
             assertEquals(orderTotal, orderEntity.getTotal());
         }
     }
+
+    @Nested
+    class findAllByCustomerId {
+
+        @Test
+        void shouldCallRepository() {
+            Long customerId = 1L;
+            PageRequest pageRequest = PageRequest.of(0, 10);
+
+            doReturn(OrderEntityFactory.createOrderEntityPage())
+                    .when(orderRepository)
+                    .findAllByCustomerId(eq(customerId), eq(pageRequest));
+
+            orderService.findAllByCustomerId(customerId, pageRequest);
+
+            verify(orderRepository, times(1))
+                    .findAllByCustomerId(eq(customerId), eq(pageRequest));
+        }
+
+        @Test
+        void shouldMapResponse() {
+            Long customerId = 1L;
+            PageRequest pageRequest = PageRequest.of(0, 10);
+            Page<Order> orderPage = OrderEntityFactory.createOrderEntityPage();
+
+            doReturn(orderPage)
+                    .when(orderRepository)
+                    .findAllByCustomerId(anyLong(), any());
+
+            Page<OrderResponse> response = orderService.findAllByCustomerId(customerId, pageRequest);
+
+            assertEquals(orderPage.getTotalPages(), response.getTotalPages());
+            assertEquals(orderPage.getTotalElements(), response.getTotalElements());
+            assertEquals(orderPage.getSize(), response.getSize());
+            assertEquals(orderPage.getNumber(), response.getNumber());
+
+            assertEquals(orderPage.getContent().getFirst().getOrderId(), response.getContent().getFirst().orderId());
+            assertEquals(orderPage.getContent().getFirst().getCustomerId(), response.getContent().getFirst().customerId());
+            assertEquals(orderPage.getContent().getFirst().getTotal(), response.getContent().getFirst().total());
+        }
+    }
+
 }
